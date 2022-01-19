@@ -1,7 +1,7 @@
 # Defaults
 TOOLCHAIN?=/opt/sdcc/sdcc
-CC=$(TOOLCHAIN)/bin/sdcc
-SIM=$(TOOLCHAIN)/bin/s51
+CC=/usr/bin/sdcc-sdcc
+SIM=/usr/bin/sdcc-s51
 TTY?=/dev/ttyUSB0
 BAUD?=115200
 
