@@ -15,6 +15,8 @@
 #include "font.h"
 #include "key.h"
 
+__xdata uint8_t cube[8][8][8];
+
 #define CLOCK_DISPLAY_FIELD_LO min_bcd
 #define CLOCK_DISPLAY_FIELD_HI hour_bcd
 
@@ -145,6 +147,23 @@ static const vec4_t pos[4] = {
 	{ fp_add(-FP_1, -FP_1/2), FP_1, FP_0 },
 	{ fp_add(-FP_3, -FP_1/2), -FP_1, FP_0 },
 };
+
+static void _render_cube(__xdata fb_frame_t *fb)
+{
+	uint8_t row;
+	uint8_t col;
+	uint8_t z;
+
+	for (row = 0; row < 8; row++) {
+		for (col = 0; col < 8; col++) {
+			for (z = 0; z < 8; z++) {
+				if (cube[row][col][z]) {
+					render_set_pixel(fb, row, col, z);
+				}
+			}
+		}
+	}
+}
 
 #define OVERLAY_FIELD mode_clock_render
 static void _mode_clock_render(__xdata fb_frame_t *fb) __reentrant
@@ -280,6 +299,36 @@ static void _mode_clock_handle()
 		fb_back_frame_completed();
 		note("f\n");
 	}
+}
+
+
+static void render_cube()
+{
+	switch (key_consume_event()) {
+	case KEY_MAKE_EVENT(KEY_NEXT, KEY_LONG):
+		_next_mode();
+		return;
+	case KEY_MAKE_EVENT(KEY_START, KEY_PRESS):
+		_display_state.mode_clock.dark ^= 1;
+		_display_state.mode_clock.pending = 1;
+		break;
+	default:
+		break;
+	}
+
+	/* Check if a back framebuffer is available */
+	if (fb_back_frame_complete()) {
+		/* early exit if not */
+		return;
+	}
+
+	/* render frame */
+	__xdata fb_frame_t *fb = fb_back_frame();
+	render_clear(fb);
+	if (!_display_state.mode_clock.dark)
+		_render_cube(fb);
+	fb_back_frame_completed();
+	note("f\n");
 }
 
 #define OVERLAY_FIELD mode_settime_render
@@ -453,7 +502,7 @@ void main(void)
 		default:
 			_mode_clock_setup();
 		case MODE_CLOCK:
-			_mode_clock_handle();
+			render_cube();
 			break;
 		case MODE_SETTIME:
 			_mode_settime_handle();

@@ -4,6 +4,9 @@
 #include "time.h"
 #include "util.h"
 #include <stdint.h>
+#include <ctype.h>
+
+extern __xdata uint8_t cube[8][8][8];
 
 #if NOSIM_UART && SIMULATION
 #undef SIMULATION
@@ -69,6 +72,9 @@ void uart_init(void) __critical
 static void _uart_dispatch_command() __critical
 {
 	uint32_t i;
+	uint32_t l;
+	uint32_t row;
+	uint32_t col;
 	if (strcmp(_uart_data, "R") == 0) {
 		for (i = 1000000; i > 0; i--) {
 			NOP();
@@ -92,6 +98,17 @@ static void _uart_dispatch_command() __critical
 		time.min_bcd = util_dec_to_bcd8(_uart_data + 12);
 		time.sec_bcd = util_dec_to_bcd8(_uart_data + 14);
 		time_set(&time);
+	}
+	if (strncmp(_uart_data, "R:", 2) == 0) {
+		l = strlen(_uart_data);
+		if (l < 12) {
+			return;
+		}
+		row = _uart_data[2] - '0';
+		col = _uart_data[3] - '0';
+		for (i = 4; i < 12; i++) {
+			cube[row][col][i-4] = _uart_data[i] - '0';
+		}
 	}
 }
 
